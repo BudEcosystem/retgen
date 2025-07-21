@@ -1,0 +1,10 @@
+INFO:__main__:Starting full WikiText-103 training...
+ERROR:__main__:Training failed: RETGENConfig.__init__() got an unexpected keyword argument 'use_embedding_cache'
+Traceback (most recent call last):
+  File "/Users/accubits/Desktop/bud/retgen/retgen_implementation/train_full_wikitext.py", line 212, in main
+    model_path = train_wikitext103_full()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/accubits/Desktop/bud/retgen/retgen_implementation/train_full_wikitext.py", line 35, in train_wikitext103_full
+    config = RETGENConfig(
+             ^^^^^^^^^^^^^
+TypeError: RETGENConfig.__init__() got an unexpected keyword argument 'use_embedding_cache'

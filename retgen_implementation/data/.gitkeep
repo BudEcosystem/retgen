@@ -1,0 +1,3 @@
+# This file ensures the data directory is preserved in git
+# Large data files (*.csv, *.json, *.parquet, etc.) will be ignored by .gitignore
+# but this directory structure will be maintained 

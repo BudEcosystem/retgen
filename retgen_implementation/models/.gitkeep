@@ -1,0 +1,3 @@
+# This file ensures the models directory is preserved in git
+# Model files (*.pt, *.pth, *.h5, etc.) will be ignored by .gitignore
+# but this directory structure will be maintained 
