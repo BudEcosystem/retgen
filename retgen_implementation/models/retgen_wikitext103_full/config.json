@@ -1,13 +1,12 @@
 {
   "min_pattern_length": 1,
-  "max_pattern_length": 8,
+  "max_pattern_length": 6,
   "pattern_stride": 1,
-  "min_pattern_frequency": 3,
+  "min_pattern_frequency": 5,
   "resolutions": [
     1,
     2,
-    3,
-    5
+    3
   ],
   "resolution_weights": null,
   "embedding_dim": 384,

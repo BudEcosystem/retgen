@@ -1,0 +1,10 @@
+{
+  "training_time": 54.10153293609619,
+  "pattern_count": 16855,
+  "model_size_mb": 60.863277435302734,
+  "dataset": "wikitext-103-v1",
+  "train_docs": 100,
+  "val_docs": 1728,
+  "test_docs": 1938,
+  "total_training_time": 54.106663942337036
+}

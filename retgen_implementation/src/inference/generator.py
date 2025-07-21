@@ -140,8 +140,19 @@ class RETGENGenerator:
         """
         k = k or self.config.retrieval_k
         
-        # Embed context
-        context_embedding = self.embedder.embed_text(context)
+        # Embed context as a pattern for proper dimension matching
+        # Create a dummy pattern with the context text
+        from src.data.pattern_extraction import Pattern
+        dummy_pattern = Pattern(
+            tokens=[],  # Empty tokens for query
+            text=context,
+            next_token=0,
+            next_text="",
+            position=0,
+            resolution=1,
+            document_id=-1
+        )
+        context_embedding = self.embedder.embed_pattern(dummy_pattern)
         query = context_embedding.reshape(1, -1)
         
         # Get continuation distributions from database

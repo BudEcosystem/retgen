@@ -38,9 +38,9 @@ def train_wikitext103_full():
         embedding_dim=384,
         
         # Pattern extraction - more selective to reduce memory
-        min_pattern_frequency=3,  # Higher threshold
-        max_pattern_length=8,     # Shorter patterns
-        resolutions=[1, 2, 3, 5], # Fewer resolutions
+        min_pattern_frequency=5,  # Higher threshold for efficiency
+        max_pattern_length=6,     # Shorter patterns
+        resolutions=[1, 2, 3],    # Fewer resolutions for speed
         
         # Retrieval settings
         retrieval_k=50,           # Smaller k for faster generation
@@ -93,7 +93,8 @@ def train_wikitext103_full():
             # Process chunk
             if len(train_texts) >= chunk_size:
                 logger.info(f"Processing chunk {i//chunk_size + 1}...")
-                if i == chunk_size:  # First chunk only for now
+                # Train on first 50k documents
+                if total_docs >= 50000:
                     break
     
     # Use validation set

@@ -47,13 +47,13 @@ class WikiTextTrainer:
             batch_size=512,
             
             # Index configuration
-            index_type="IVF1024,PQ64",
+            index_type="Flat",  # Use Flat index for small datasets
             nprobe=10,
             
             # Performance settings
             device="cpu",
             use_gpu=False,
-            num_workers=4,
+            num_workers=0,  # Disable multiprocessing to avoid issues
             
             # Generation settings
             max_generation_length=200,
@@ -338,7 +338,9 @@ def main():
     config = RETGENConfig(
         embedding_model=args.embedding_model,
         retrieval_k=args.retrieval_k,
-        batch_size=args.batch_size
+        batch_size=args.batch_size,
+        index_type="Flat",  # Use Flat for small datasets
+        num_workers=0  # Avoid multiprocessing issues
     )
     
     # Create trainer
