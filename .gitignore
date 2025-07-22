@@ -109,6 +109,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+retgen_env/
+*_env/
+*/venv/
+*/env/
 
 # Spyder project settings
 .spyderproject
@@ -148,7 +152,11 @@ Thumbs.db
 .dockerignore
 docker-compose.override.yml
 
-# Model files and large data files
+# ===============================
+# MODELS & WEIGHTS - NEVER COMMIT
+# ===============================
+
+# All model formats - comprehensive exclusion
 *.pkl
 *.pickle
 *.h5
@@ -156,25 +164,161 @@ docker-compose.override.yml
 *.pt
 *.pth
 *.ckpt
+*.checkpoint
 *.safetensors
 *.bin
 *.model
+*.weights
+*.joblib
+*.torch
+*.tf
+*.tflite
+*.onnx
+*.pb
+*.pbtxt
+*.meta
+*.data-*
+*.index
 
-# Database files
+# Model directories - exclude everything
+models/
+models/**
+model/
+weights/
+checkpoints/
+saved_models/
+trained_models/
+pretrained/
+fine_tuned/
+
+# Specifically ignore implementation models directory
+retgen_implementation/models/
+retgen_implementation/models/**
+
+# ===============================
+# DATA & DATASETS - NEVER COMMIT
+# ===============================
+
+# All data formats
+data/
+datasets/
+corpus/
+*.csv
+*.tsv
+*.json
+*.jsonl
+*.parquet
+*.arrow
+*.feather
+*.xlsx
+*.xls
+*.txt
+*.text
+*.corpus
+*.conllu
+*.conll
+
+# Additional JSON files exclusion (everywhere)
+**/*.json
+*.json
+
+# Keep only structure files
+!data/README.md
+!data/.gitkeep
+!datasets/README.md
+!datasets/.gitkeep
+
+# ===============================
+# TRAINING & INFERENCE ARTIFACTS
+# ===============================
+
+# Database files - all formats
 *.db
 *.sqlite
 *.sqlite3
 *.mdb
 *.ldb
+*.leveldb
 
-# Log files
-*.log
+# Generated pattern metadata
+pattern_metadata/
+metadata/
+
+# FAISS index files - all variants
+*.index
+*.faiss
+*.ivf
+*.hnsw
+indices/
+indexes/
+faiss_indices/
+
+# Vector embeddings and caches
+embeddings/
+vectors/
+*.npy
+*.npz
+*.memmap
+embedding_cache/
+vector_cache/
+
+# Training outputs and logs
+training_logs/
+training_outputs/
+training_results/
+eval_results/
+evaluation/
 logs/
+*.log
 
-# Temporary files
+# Experiment tracking
+experiments/
+runs/
+outputs/
+results/
+benchmarks/
+performance_logs/
+wandb/
+.wandb/
+mlruns/
+.mlflow/
+tensorboard_logs/
+tb_logs/
+
+# ===============================
+# ML FRAMEWORK CACHES
+# ===============================
+
+# Hugging Face transformers cache
+.cache/
+huggingface/
+transformers_cache/
+sentence_transformers/
+~/.cache/huggingface/
+~/.cache/torch/
+torch_cache/
+
+# CUDA and GPU caches
+.nv/
+.nvidia/
+
+# Other ML caches
+sklearn_cache/
+nltk_data/
+spacy_models/
+
+# ===============================
+# TEMPORARY & WORK DIRECTORIES
+# ===============================
+
+# Temporary files and directories
 tmp/
 temp/
 .tmp/
+scratch/
+work/
+workspace/
+staging/
 
 # API keys and secrets
 .env.local
@@ -184,24 +328,7 @@ temp/
 secrets.json
 config/secrets.yml
 
-# Generated files
-pattern_metadata/*.mdb
-pattern_metadata/*.ldb
-
-# Large datasets
-data/*.csv
-data/*.json
-data/*.parquet
-data/*.txt
-!data/README.md
-!data/.gitkeep
-
-# Models directory (keep structure but ignore actual model files)
-models/*.bin
-models/*.pt
-models/*.pth
-models/*.h5
-models/*.ckpt
-models/*.safetensors
-!models/README.md
-!models/.gitkeep 
+# FastAPI specific
+.pytest_cache
+__pycache__ cache/
+data/
