@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RETGEN Training Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+        
+        .status-initializing { background: #ffc107; color: white; }
+        .status-loading_data { background: #17a2b8; color: white; }
+        .status-training { background: #28a745; color: white; }
+        .status-saving_model { background: #6c757d; color: white; }
+        .status-completed { background: #28a745; color: white; }
+        .status-error { background: #dc3545; color: white; }
+        .status-interrupted { background: #fd7e14; color: white; }
+        
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .metric-value {
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #667eea;
+            background: white;
+            font-size: 0.9em;
+        }
+        
+        .error-entry {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+            color: #dc3545;
+        }
+        
+        .gpu-meter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .meter-bar {
+            flex: 1;
+            height: 20px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .meter-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+        
+        .gpu-fill { background: linear-gradient(90deg, #28a745, #20c997); }
+        .cpu-fill { background: linear-gradient(90deg, #ffc107, #fd7e14); }
+        .ram-fill { background: linear-gradient(90deg, #17a2b8, #6610f2); }
+        
+        .checkpoint-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        
+        .checkpoint-item {
+            margin: 5px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .training-active {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 RETGEN Training Dashboard</h1>
+        
+        <div class="dashboard">
+            <!-- Status Card -->
+            <div class="card">
+                <h2>Training Status</h2>
+                <div id="status-container">
+                    <span class="status-badge status-initializing" id="status-badge">Initializing</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Start Time:</span>
+                    <span class="metric-value" id="start-time">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Elapsed Time:</span>
+                    <span class="metric-value" id="elapsed-time">--</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">ETA:</span>
+                    <span class="metric-value" id="eta">--</span>
+                </div>
+            </div>
+            
+            <!-- Progress Card -->
+            <div class="card">
+                <h2>Training Progress</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Samples Processed:</span>
+                    <span class="metric-value" id="samples-processed">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Patterns Extracted:</span>
+                    <span class="metric-value" id="patterns-extracted">0</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Speed:</span>
+                    <span class="metric-value" id="speed">0 samples/sec</span>
+                </div>
+            </div>
+            
+            <!-- GPU Stats Card -->
+            <div class="card">
+                <h2>System Resources</h2>
+                <div class="metric">
+                    <span class="metric-label">GPU Memory:</span>
+                    <span class="metric-value" id="gpu-memory">--</span>
+                </div>
+                <div class="gpu-meter">
+                    <div class="meter-bar">
+                        <div class="meter-fill gpu-fill" id="gpu-bar" style="width: 0%"></div>
+                    </div>
+                    <span id="gpu-percent">0%</span>
+                </div>
+                
+                <div class="metric">
+                    <span class="metric-label">CPU Usage:</span>
+                    <span class="metric-value" id="cpu-usage">--</span>
+                </div>
+                <div class="gpu-meter">
+                    <div class="meter-bar">
+                        <div class="meter-fill cpu-fill" id="cpu-bar" style="width: 0%"></div>
+                    </div>
+                    <span id="cpu-percent">0%</span>
+                </div>
+                
+                <div class="metric">
+                    <span class="metric-label">RAM Usage:</span>
+                    <span class="metric-value" id="ram-usage">--</span>
+                </div>
+                <div class="gpu-meter">
+                    <div class="meter-bar">
+                        <div class="meter-fill ram-fill" id="ram-bar" style="width: 0%"></div>
+                    </div>
+                    <span id="ram-percent">0%</span>
+                </div>
+            </div>
+            
+            <!-- Performance Chart -->
+            <div class="card" style="grid-column: span 2;">
+                <h2>Training Performance</h2>
+                <div class="chart-container">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Checkpoints Card -->
+            <div class="card">
+                <h2>Checkpoints</h2>
+                <div class="checkpoint-list" id="checkpoint-list">
+                    <div class="checkpoint-item">No checkpoints yet</div>
+                </div>
+            </div>
+            
+            <!-- Logs Card -->
+            <div class="card" style="grid-column: span 2;">
+                <h2>Recent Logs</h2>
+                <div class="log-container" id="log-container">
+                    <div class="log-entry">Waiting for logs...</div>
+                </div>
+            </div>
+            
+            <!-- Errors Card -->
+            <div class="card">
+                <h2>Errors</h2>
+                <div class="log-container" id="error-container">
+                    <div class="log-entry">No errors</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Chart setup
+        const ctx = document.getElementById('performance-chart').getContext('2d');
+        const performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Samples/Second',
+                    data: [],
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Patterns (thousands)',
+                    data: [],
+                    borderColor: '#764ba2',
+                    backgroundColor: 'rgba(118, 75, 162, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Samples/Second'
+                        }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Patterns (thousands)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+        
+        // Update functions
+        function formatTime(seconds) {
+            if (seconds < 60) return `${Math.floor(seconds)}s`;
+            if (seconds < 3600) return `${Math.floor(seconds/60)}m ${Math.floor(seconds%60)}s`;
+            return `${Math.floor(seconds/3600)}h ${Math.floor((seconds%3600)/60)}m`;
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) return (num/1000000).toFixed(2) + 'M';
+            if (num >= 1000) return (num/1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+        
+        function updateDashboard(status) {
+            // Update status badge
+            const badge = document.getElementById('status-badge');
+            badge.textContent = status.status.replace('_', ' ').toUpperCase();
+            badge.className = `status-badge status-${status.status}`;
+            
+            // Add pulse animation if training
+            if (status.status === 'training') {
+                badge.classList.add('training-active');
+            }
+            
+            // Update times
+            document.getElementById('start-time').textContent = 
+                status.start_time ? new Date(status.start_time).toLocaleTimeString() : '--';
+            document.getElementById('elapsed-time').textContent = 
+                status.elapsed_time ? formatTime(status.elapsed_time) : '--';
+            document.getElementById('eta').textContent = 
+                status.estimated_time_remaining ? formatTime(status.estimated_time_remaining) : '--';
+            
+            // Update progress
+            const progress = status.progress_percent || 0;
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.style.width = progress + '%';
+            progressBar.textContent = progress.toFixed(1) + '%';
+            
+            document.getElementById('samples-processed').textContent = 
+                formatNumber(status.samples_processed || 0) + ' / ' + formatNumber(status.total_samples || 0);
+            document.getElementById('patterns-extracted').textContent = 
+                formatNumber(status.patterns_extracted || 0);
+            document.getElementById('speed').textContent = 
+                (status.samples_per_second || 0).toFixed(1) + ' samples/sec';
+            
+            // Update system resources
+            const gpuPercent = (status.gpu_memory_used / status.gpu_memory_total * 100) || 0;
+            document.getElementById('gpu-memory').textContent = 
+                `${(status.gpu_memory_used || 0).toFixed(2)}GB / ${(status.gpu_memory_total || 0).toFixed(2)}GB`;
+            document.getElementById('gpu-bar').style.width = gpuPercent + '%';
+            document.getElementById('gpu-percent').textContent = gpuPercent.toFixed(1) + '%';
+            
+            document.getElementById('cpu-usage').textContent = (status.cpu_percent || 0).toFixed(1) + '%';
+            document.getElementById('cpu-bar').style.width = (status.cpu_percent || 0) + '%';
+            document.getElementById('cpu-percent').textContent = (status.cpu_percent || 0).toFixed(1) + '%';
+            
+            const ramPercent = (status.ram_used / status.ram_total * 100) || 0;
+            document.getElementById('ram-usage').textContent = 
+                `${(status.ram_used || 0).toFixed(2)}GB / ${(status.ram_total || 0).toFixed(2)}GB`;
+            document.getElementById('ram-bar').style.width = ramPercent + '%';
+            document.getElementById('ram-percent').textContent = ramPercent.toFixed(1) + '%';
+            
+            // Update checkpoints
+            if (status.checkpoints && status.checkpoints.length > 0) {
+                const checkpointList = document.getElementById('checkpoint-list');
+                checkpointList.innerHTML = status.checkpoints.map(cp => 
+                    `<div class="checkpoint-item">
+                        <strong>${cp.path.split('/').pop()}</strong><br>
+                        Samples: ${formatNumber(cp.samples)}, Patterns: ${formatNumber(cp.patterns)}
+                    </div>`
+                ).join('');
+            }
+            
+            // Update logs
+            if (status.logs && status.logs.length > 0) {
+                const logContainer = document.getElementById('log-container');
+                logContainer.innerHTML = status.logs.slice(-10).reverse().map(log => 
+                    `<div class="log-entry">${new Date(log.timestamp).toLocaleTimeString()}: ${log.message}</div>`
+                ).join('');
+            }
+            
+            // Update errors
+            if (status.errors && status.errors.length > 0) {
+                const errorContainer = document.getElementById('error-container');
+                errorContainer.innerHTML = status.errors.slice(-5).reverse().map(err => 
+                    `<div class="log-entry error-entry">${new Date(err.timestamp).toLocaleTimeString()}: ${err.error}</div>`
+                ).join('');
+            }
+            
+            // Update chart
+            if (status.samples_per_second) {
+                const now = new Date().toLocaleTimeString();
+                performanceChart.data.labels.push(now);
+                performanceChart.data.datasets[0].data.push(status.samples_per_second);
+                performanceChart.data.datasets[1].data.push((status.patterns_extracted || 0) / 1000);
+                
+                // Keep only last 20 points
+                if (performanceChart.data.labels.length > 20) {
+                    performanceChart.data.labels.shift();
+                    performanceChart.data.datasets[0].data.shift();
+                    performanceChart.data.datasets[1].data.shift();
+                }
+                
+                performanceChart.update();
+            }
+        }
+        
+        // Fetch and update status
+        async function fetchStatus() {
+            try {
+                const response = await fetch('training_status/status.json');
+                const status = await response.json();
+                updateDashboard(status);
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        }
+        
+        // Update every 2 seconds
+        setInterval(fetchStatus, 2000);
+        fetchStatus(); // Initial fetch
+    </script>
+</body>
+</html>

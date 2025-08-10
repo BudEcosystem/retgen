@@ -110,6 +110,11 @@ class RETGENConfig:
             assert abs(sum(self.resolution_weights) - 1.0) < 1e-6, \
                 "resolution_weights must sum to 1"
     
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert configuration to dictionary."""
+        import dataclasses
+        return dataclasses.asdict(self)
+    
     def get_index_params(self) -> Dict[str, Any]:
         """Get parameters for FAISS index construction."""
         return {

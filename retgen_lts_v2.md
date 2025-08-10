@@ -1,9 +1,9 @@
 # Learning to Search in Vector Space: A Complete Theoretical Framework for Emulating Multi-Layer Transformers via Unified Energy-Based Hierarchical Retrieval with Dynamic Vocabulary Learning
 
-**Authors:** [Author Names]  
-**Affiliation:** [Institution]  
-**Date:** December 2024  
-**arXiv:2412.XXXXX [cs.LG]**
+**Authors:** Jithin VG
+**Affiliation:** Bud Ecosystem Inc 
+**Date:** July 2025  
+
 
 ## Abstract
 

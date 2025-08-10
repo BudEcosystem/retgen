@@ -1,5 +1,8 @@
 # RETGEN: Retrieval-Enhanced Text Generation through Vector Database Emulation of Transformer Attention 
 
+Author: Jithin VG (jithinvg@bud.studio)
+Organisation: Bud Ecosystem Inc
+
 ## Abstract
 
 We present a comprehensive theoretical framework for RETGEN (Retrieval-Enhanced Text Generation), establishing rigorous mathematical foundations for emulating transformer attention mechanisms through vector database operations. This extended analysis provides detailed derivations of the duality principle, complete theoretical treatment of representation learning, and thorough pattern decomposition theory. We derive exact complexity bounds for training and inference, prove convergence properties, and establish the mathematical equivalence between parametric and non-parametric approaches under specific conditions.

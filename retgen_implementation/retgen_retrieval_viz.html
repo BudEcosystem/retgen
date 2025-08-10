@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RETGEN - Retrieval Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: end;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .input-group label {
+            color: #667eea;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .input-group input {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: fit-content;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        #visualization {
+            min-height: 500px;
+            background: #fafafa;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .node {
+            cursor: pointer;
+        }
+        
+        .node circle {
+            stroke-width: 3px;
+            transition: all 0.3s;
+        }
+        
+        .node:hover circle {
+            stroke-width: 5px;
+        }
+        
+        .node text {
+            font-size: 12px;
+            pointer-events: none;
+        }
+        
+        .link {
+            stroke: #999;
+            stroke-opacity: 0.6;
+            stroke-width: 2px;
+        }
+        
+        .link.highlight {
+            stroke: #667eea;
+            stroke-width: 3px;
+            stroke-opacity: 1;
+        }
+        
+        .tooltip {
+            position: absolute;
+            text-align: left;
+            padding: 12px;
+            font-size: 13px;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            max-width: 300px;
+        }
+        
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .retrieval-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .retrieval-item {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .pattern-text {
+            color: #333;
+        }
+        
+        .continuation-text {
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .similarity-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 RETGEN Retrieval Visualization</h1>
+            <p style="opacity: 0.9;">Explore how RETGEN retrieves patterns from 28.4M stored patterns</p>
+        </div>
+        
+        <div class="main-card">
+            <div class="controls">
+                <div class="input-group">
+                    <label for="queryInput">Enter Query Text:</label>
+                    <input type="text" id="queryInput" placeholder="e.g., The future of technology" value="The future of artificial intelligence">
+                </div>
+                <div class="input-group">
+                    <label for="kValue">Top-K:</label>
+                    <input type="number" id="kValue" min="5" max="50" value="15">
+                </div>
+                <button class="btn" onclick="visualizeRetrieval()" id="searchBtn">Visualize Retrieval</button>
+            </div>
+            
+            <div id="visualization">
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4CAF50;"></div>
+                        <span>Query</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #667eea;"></div>
+                        <span>Retrieved Pattern</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF9800;"></div>
+                        <span>Continuation</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stats" id="stats" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRetrieved">0</div>
+                    <div class="stat-label">Patterns Retrieved</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgSimilarity">0.00</div>
+                    <div class="stat-label">Avg Similarity</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="uniqueContinuations">0</div>
+                    <div class="stat-label">Unique Continuations</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="retrievalTime">0ms</div>
+                    <div class="stat-label">Retrieval Time</div>
+                </div>
+            </div>
+            
+            <div class="retrieval-list" id="retrievalList"></div>
+        </div>
+    </div>
+    
+    <div class="tooltip"></div>
+    
+    <script>
+        const API_URL = 'http://localhost:5000';
+        
+        async function visualizeRetrieval() {
+            const query = document.getElementById('queryInput').value;
+            const k = parseInt(document.getElementById('kValue').value);
+            const searchBtn = document.getElementById('searchBtn');
+            
+            if (!query) {
+                alert('Please enter a query');
+                return;
+            }
+            
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(`${API_URL}/api/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        k: k
+                    })
+                });
+                
+                const data = await response.json();
+                const retrievalTime = Date.now() - startTime;
+                
+                if (data.results) {
+                    createVisualization(query, data.results);
+                    updateStats(data.results, retrievalTime);
+                    updateRetrievalList(data.results);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error retrieving patterns. Make sure the server is running.');
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Visualize Retrieval';
+            }
+        }
+        
+        function createVisualization(query, results) {
+            // Clear previous visualization
+            d3.select('#visualization svg').remove();
+            
+            const width = document.getElementById('visualization').offsetWidth - 40;
+            const height = 500;
+            
+            // Prepare data for force-directed graph
+            const nodes = [
+                { id: 'query', label: query, type: 'query', x: width / 2, y: height / 2 }
+            ];
+            
+            const links = [];
+            
+            results.forEach((result, i) => {
+                const patternId = `pattern_${i}`;
+                const continuationId = `continuation_${i}`;
+                
+                // Add pattern node
+                nodes.push({
+                    id: patternId,
+                    label: result.pattern,
+                    type: 'pattern',
+                    similarity: result.similarity
+                });
+                
+                // Add continuation node
+                nodes.push({
+                    id: continuationId,
+                    label: result.continuation,
+                    type: 'continuation'
+                });
+                
+                // Add links
+                links.push({
+                    source: 'query',
+                    target: patternId,
+                    value: result.similarity
+                });
+                
+                links.push({
+                    source: patternId,
+                    target: continuationId,
+                    value: 1
+                });
+            });
+            
+            // Create SVG
+            const svg = d3.select('#visualization')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            // Create force simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force('link', d3.forceLink(links).id(d => d.id).distance(d => 100 / (d.value || 1)))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(30));
+            
+            // Create links
+            const link = svg.append('g')
+                .selectAll('line')
+                .data(links)
+                .enter().append('line')
+                .attr('class', 'link')
+                .style('stroke-width', d => Math.sqrt(d.value * 5));
+            
+            // Create nodes
+            const node = svg.append('g')
+                .selectAll('.node')
+                .data(nodes)
+                .enter().append('g')
+                .attr('class', 'node')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            // Add circles to nodes
+            node.append('circle')
+                .attr('r', d => d.type === 'query' ? 20 : d.type === 'pattern' ? 15 : 10)
+                .style('fill', d => {
+                    if (d.type === 'query') return '#4CAF50';
+                    if (d.type === 'pattern') return '#667eea';
+                    return '#FF9800';
+                })
+                .style('stroke', '#fff')
+                .on('mouseover', showTooltip)
+                .on('mouseout', hideTooltip);
+            
+            // Add labels to nodes
+            node.append('text')
+                .attr('dy', 25)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '10px')
+                .text(d => {
+                    const label = d.label;
+                    return label.length > 20 ? label.substring(0, 20) + '...' : label;
+                });
+            
+            // Update positions on tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node
+                    .attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+            
+            // Drag functions
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+            
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+            
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        }
+        
+        function showTooltip(event, d) {
+            const tooltip = d3.select('.tooltip');
+            
+            let content = `<strong>${d.type.charAt(0).toUpperCase() + d.type.slice(1)}:</strong><br>"${d.label}"`;
+            if (d.similarity !== undefined) {
+                content += `<br><strong>Similarity:</strong> ${d.similarity.toFixed(3)}`;
+            }
+            
+            tooltip.html(content)
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY - 10) + 'px')
+                .style('opacity', 1);
+        }
+        
+        function hideTooltip() {
+            d3.select('.tooltip').style('opacity', 0);
+        }
+        
+        function updateStats(results, retrievalTime) {
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('totalRetrieved').textContent = results.length;
+            
+            const avgSim = results.reduce((sum, r) => sum + r.similarity, 0) / results.length;
+            document.getElementById('avgSimilarity').textContent = avgSim.toFixed(3);
+            
+            const uniqueCont = new Set(results.map(r => r.continuation)).size;
+            document.getElementById('uniqueContinuations').textContent = uniqueCont;
+            
+            document.getElementById('retrievalTime').textContent = retrievalTime + 'ms';
+        }
+        
+        function updateRetrievalList(results) {
+            const listContainer = document.getElementById('retrievalList');
+            listContainer.innerHTML = '<h3 style="margin-bottom: 15px; color: #667eea;">Retrieved Patterns:</h3>';
+            
+            results.forEach((result, i) => {
+                const item = document.createElement('div');
+                item.className = 'retrieval-item';
+                item.innerHTML = `
+                    <div>
+                        <span class="pattern-text">"${result.pattern}"</span> → 
+                        <span class="continuation-text">"${result.continuation}"</span>
+                    </div>
+                    <span class="similarity-badge">${result.similarity.toFixed(3)}</span>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+        
+        // Initial visualization on load
+        window.onload = function() {
+            visualizeRetrieval();
+        };
+    </script>
+</body>
+</html>
